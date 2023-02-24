@@ -11,8 +11,12 @@ class DQN(nn.Module):
         self.output = nn.Linear(32, n_action)
 
     def forward(self, x):
+
+        # print(x.shape)
         x = F.relu(self.layer1(x))
+        # print(x.shape)
         x = F.relu(self.layer2(x))
+        # print(x.shape)
         out = F.relu(self.output(x))
         return out
 

@@ -4,6 +4,8 @@ import random
 import torch 
 import torch.nn as nn
 import math 
+from torch import optim
+from replaybuffer import transition
 
 class Agent:
     def __init__(self, obs_dim, act_dim, capacity=10000, device='cpu'):
@@ -16,7 +18,7 @@ class Agent:
         self.TAU = 0.005
         self.LR = 1e-4
 
-        self.account = []
+        self.inventory = []
         self.act_dim = act_dim
         self.obs_dim = obs_dim
         self.device = device
@@ -36,13 +38,14 @@ class Agent:
         eps_threshold = self.EPS_END + (self.EPS_START - self.EPS_END)* \
                                         math.exp(-1*self.steps_done/self.EPS_DECAY)
 
-        self.steps_done += 1
+        # self.steps_done += 1
 
         if sample > eps_threshold:
             with torch.no_grad():
                 return self.policy_net(obs).max(1)[1].view(1,1)
         else:
-            return torch.randint(0, self.act - 1, (1,1)).to(self.device)
+            self.steps_done += 1
+            return torch.randint(0, self.act_dim - 1, (1,1)).to(self.device)
 
 
     def optimize_model(self):
@@ -50,7 +53,7 @@ class Agent:
             return
         transitions = self.memory.sample(self.BATCH_SIZE)
 
-        batch = Transition(*zip(*transitions))
+        batch = transition(*zip(*transitions))
 
         # TODO [change the replay buffer]
         # Alternative: replay buffer could return 
@@ -76,8 +79,10 @@ class Agent:
             next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1)[0]
         
         qval = reward_batch + self.GAMMA * next_state_values
-
-        loss = self.criterion(qval, state_action_values) 
+        # print(qval.shape)
+        # print(state_action_values.shape)
+        # print('----')
+        loss = self.criterion(qval.unsqueeze(1), state_action_values) 
         self.optimizer.zero_grad()
         loss.backward()
         torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 5) # variable

@@ -8,8 +8,7 @@ transition = namedtuple('transition',
                        ('state', 'action', 'next_state', 'reward', 'info'))
 
 class Replaybuffer:
-    def __init__(self, window, capacity):
-        self.window = window
+    def __init__(self, capacity):
         self.memory = deque([], maxlen=capacity)
 
     def push(self, *args):
